@@ -48,18 +48,20 @@ export default function ImageSizeCompressor() {
 
         ctx.drawImage(img, 0, 0, width, height);
 
+        const mimeType = "image/webp"; // Use WebP format to preserve transparency and apply quality
+
         canvas.toBlob(
           (blob) => {
             if (!blob) return reject(new Error("Could not create blob"));
 
             const compressedFile = new File([blob], image.name, {
-              type: "image/jpeg",
+              type: mimeType,
               lastModified: Date.now(),
             });
 
             resolve(compressedFile);
           },
-          "image/jpeg",
+          mimeType,
           quality,
         );
       };
@@ -110,6 +112,10 @@ export default function ImageSizeCompressor() {
     }
   }
 
+  function delay(ms: number) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
   async function handleCompress() {
     try {
       setIsCompressing(true);
@@ -117,13 +123,14 @@ export default function ImageSizeCompressor() {
         images.map((image) => compressImage(image, quality)),
       );
 
-      compressedFiles.forEach((file, index) => {
+      for (const [index, file] of compressedFiles.entries()) {
         const link = document.createElement("a");
         link.href = URL.createObjectURL(file);
         link.download = `compressed_${images[index]?.name ?? `image_${index}`}`;
         link.click();
         URL.revokeObjectURL(link.href);
-      });
+        await delay(200); // Add a delay of 500ms between each download
+      }
     } catch (error) {
       console.error("Error compressing images:", error);
     } finally {
